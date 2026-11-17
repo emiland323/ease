@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ease – stress and anxiety toolkit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#E8EFEE;--surface:#F7FAF9;--ink:#1D2D38;--mute:#5B6E78;--line:#CBD8D6;--accent:#2E7D7A;--accent-ink:#fff;--soft:#B9DAD6;--warn:#8A3B4A;--warnbg:#F6E4E7;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#111C22;--surface:#18272F;--ink:#E3EEEC;--mute:#93A7AF;--line:#2A3C45;--accent:#6CC4BD;--accent-ink:#0F1E22;--soft:#24474A;--warn:#F0A6B3;--warnbg:#3A2229}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#111C22;--surface:#18272F;--ink:#E3EEEC;--mute:#93A7AF;--line:#2A3C45;--accent:#6CC4BD;--accent-ink:#0F1E22;--soft:#24474A;--warn:#F0A6B3;--warnbg:#3A2229}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.5;display:flex;justify-content:center}
+.app{width:100%;max-width:430px;height:100%;display:flex;flex-direction:column;background:var(--bg)}
+header{padding:18px 22px 6px}
+h1{font-size:26px;line-height:1.2;margin:0;font-weight:700;letter-spacing:-.01em}
+header p{margin:2px 0 0;color:var(--mute);font-size:15px}
+main{flex:1;overflow-y:auto;padding:12px 22px 24px}
+nav{display:flex;border-top:1px solid var(--line);background:var(--surface)}
+nav button{flex:1;padding:12px 4px 14px;border:0;background:none;color:var(--mute);font:inherit;font-size:12px;font-weight:500;cursor:pointer;min-height:56px}
+nav button[aria-selected="true"]{color:var(--accent);font-weight:700;box-shadow:inset 0 3px 0 var(--accent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{display:block;width:100%;padding:15px;border-radius:14px;border:0;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:700;font-size:17px;cursor:pointer;min-height:52px}
+.btn.ghost{background:none;border:1.5px solid var(--line);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
+.chip{padding:10px 16px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:15px;cursor:pointer;min-height:44px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.stage{display:flex;flex-direction:column;align-items:center;margin:18px 0 22px}
+.orb-wrap{width:250px;height:250px;display:grid;place-items:center}
+.orb{width:130px;height:130px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--soft),var(--accent));display:grid;place-items:center;color:var(--accent-ink);font-weight:700;font-size:18px;transform:scale(1);transition:transform 4s ease-in-out}
+.count{font-size:15px;color:var(--mute);margin-top:6px;min-height:24px}
+label,.lbl{display:block;font-weight:700;margin:16px 0 6px}
+input[type=range]{width:100%;accent-color:var(--accent);height:32px}
+.row{display:flex;justify-content:space-between;color:var(--mute);font-size:14px}
+textarea{width:100%;min-height:84px;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0}
+.card small{color:var(--mute)}
+.card p{margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.bars{display:flex;gap:6px;align-items:flex-end;height:80px;margin-top:8px}
+.bars div{flex:1;background:var(--accent);border-radius:6px 6px 2px 2px;min-height:4px}
+.bars span{display:block;text-align:center;font-size:11px;color:var(--mute);margin-top:4px}
+.help{background:var(--warnbg);color:var(--warn);border-radius:16px;padding:16px;margin:0 0 14px}
+.help a{color:inherit;font-weight:700}
+.big{font-size:22px;line-height:1.3;font-weight:700;margin:10px 0 16px}
+.muted{color:var(--mute);font-size:14px}
+.del{background:none;border:0;color:var(--mute);font:inherit;font-size:14px;cursor:pointer;padding:8px 0;min-height:44px}
+@media (prefers-reduced-motion:reduce){.orb{transition-duration:.01s!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1 id="title">Breathe</h1><p id="sub">Slow your body down first. Thoughts follow.</p></header>
+  <main id="view"></main>
+  <nav role="tablist" id="nav"></nav>
+</div>
+<script>
+const TABS=[["home","Home","Self-help for stress and anxiety.","Ease"],["breathe","Breathe","Slow your body down first. Thoughts follow."],["checkin","Check in","A quick read on how you are today."],["journal","Journal","Get the worry out of your head and onto the page."],["meditate","Meditate","Guided sessions to quiet a busy mind."],["ground","Reset","Ground yourself and get moving."]];
+const PATTERNS={"Box":[["Breathe in",4,1.9],["Hold",4,1.9],["Breathe out",4,1],["Hold",4,1]],"4-7-8":[["Breathe in",4,1.9],["Hold",7,1.9],["Breathe out",8,1]],"Calm 4-6":[["Breathe in",4,1.9],["Breathe out",6,1]],"Long out 4-8":[["Breathe in",4,1.9],["Breathe out",8,1]],"Coherent 5-5":[["Breathe in",5,1.9],["Breathe out",5,1]],"Triangle":[["Breathe in",4,1.9],["Hold",4,1.9],["Breathe out",4,1]],"Sigh":[["Sip in",2,1.6],["Top up",1,1.9],["Long sigh out",6,1]]};
+const DESC={"Box":"4 in, 4 hold, 4 out, 4 hold. Steady and focusing.","4-7-8":"4 in, 7 hold, 8 out. A deeper reset, good before sleep.","Calm 4-6":"4 in, 6 out. A gentle everyday rhythm.","Long out 4-8":"4 in, 8 out. A longer exhale to ease strong tension.","Coherent 5-5":"5 in, 5 out. Even and smooth, about six breaths a minute.","Triangle":"4 in, 4 hold, 4 out. Box breathing without the second hold.","Sigh":"Two quick sips in through the nose, then a long sigh out. Fast relief in a few rounds."};
+const TAGS=["Poor sleep","Caffeine","Work","Money","Health","Relationships","Crowds","Nothing clear"];
+const MOODS=["Very low","Low","Okay","Good","Great"];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let tab="breathe",timer=null,pattern="Box",running=false,mem={checkins:store.get("checkins",[]),entries:store.get("entries",[])};
+const $=(s,r=document)=>r.querySelector(s),view=$("#view");
+function el(t,a={},...kids){const e=document.createElement(t);for(const k in a){if(k==="class")e.className=a[k];else if(k.startsWith("on"))e.addEventListener(k.slice(2),a[k]);else e.setAttribute(k,a[k])}kids.flat().forEach(c=>e.append(c));return e}
+function stop(){running=false;clearTimeout(timer)}
+function nav(){const n=$("#nav");n.replaceChildren(...TABS.map(([id,name])=>el("button",{role:"tab","aria-selected":id===tab,onclick:()=>go(id)},name)))}
+function go(id){stop();tab=id;const t=TABS.find(x=>x[0]===id);$("#title").textContent=t[3]||t[1];$("#sub").textContent=t[2];nav();view.scrollTop=0;view.replaceChildren(...({home,breathe,checkin,journal,meditate,ground}[id])())}
+
+function breathe(){
+  const orb=el("div",{class:"orb"},"Ready"),count=el("div",{class:"count"},"Pick a rhythm, then start.");
+  const chips=el("div",{class:"chips",style:"margin-bottom:6px"}),desc=el("p",{class:"muted",style:"min-height:44px;margin:4px 0 14px"});
+  const btn=el("button",{class:"btn"},"Start");
+  const drawChips=()=>{desc.textContent=DESC[pattern];chips.replaceChildren(...Object.keys(PATTERNS).map(p=>el("button",{class:"chip","aria-pressed":p===pattern,onclick:()=>{if(running)return;pattern=p;drawChips()}},p)))};
+  drawChips();
+  function run(i=0,cycles=0){
+    if(!running)return;
+    const seq=PATTERNS[pattern],[label,secs,scale]=seq[i%seq.length];
+    orb.textContent=label;orb.style.transitionDuration=secs+"s";orb.style.transform="scale("+scale+")";
+    let left=secs;count.textContent=left+"s";
+    const tick=()=>{if(!running)return;left--;if(left>0){count.textContent=left+"s";timer=setTimeout(tick,1000)}else{const ni=i+1;if(ni%seq.length===0)cycles++;run(ni,cycles)}};
+    timer=setTimeout(tick,1000);
+  }
+  btn.onclick=()=>{
+    if(running){stop();orb.style.transitionDuration="1.5s";orb.style.transform="scale(1)";orb.textContent="Ready";count.textContent="Paused. Start again whenever you like.";btn.textContent="Start";return}
+    running=true;btn.textContent="Stop";run();
+  };
+  return[el("div",{class:"stage"},el("div",{class:"orb-wrap"},orb),count),chips,desc,btn,el("p",{class:"muted"},"Longer out-breaths than in-breaths help settle your nervous system. If you feel dizzy, pause and breathe normally.")];
+}
+
+function checkin(){
+  let mood=3,anx=4,tags=new Set();
+  const mv=el("span",{},MOODS[2]),av=el("span",{},"4 / 10");
+  const m=el("input",{type:"range",min:1,max:5,value:3,"aria-labelledby":"ml",oninput:e=>{mood=+e.target.value;mv.textContent=MOODS[mood-1]}});
+  const a=el("input",{type:"range",min:0,max:10,value:4,"aria-labelledby":"al",oninput:e=>{anx=+e.target.value;av.textContent=anx+" / 10"}});
+  const chips=el("div",{class:"chips"},TAGS.map(t=>el("button",{class:"chip","aria-pressed":"false",onclick:e=>{const b=e.currentTarget;tags.has(t)?tags.delete(t):tags.add(t);b.setAttribute("aria-pressed",tags.has(t))}},t)));
+  const hist=el("div"),recs=el("div");
+  const showRecs=()=>{
+    const r=[],add=(t,x,l,f)=>r.push({t,x,l,f});
+    const br=p=>()=>{pattern=p;go("breathe")},me=i=>()=>{window.medPick=i;go("meditate")};
+    if(anx>=7){add("Slow your exhale","A long sigh out can bring a racing body down quickly.","Try Sigh breathing",br("Sigh"));add("Anchor in the room","Naming what you can see and touch pulls attention out of worry.","Try 5-4-3-2-1",()=>go("ground"))}
+    else if(anx>=4){add("Lengthen your out-breath","A longer exhale tells your body it’s safe to settle.","Try Long out 4-8",br("Long out 4-8"));add("Let thoughts pass","Watching worries come and go makes them less sticky.","Try Letting thoughts pass",me(2))}
+    else add("Keep the calm going","A steady rhythm now makes harder moments easier later.","Try Coherent 5-5",br("Coherent 5-5"));
+    if(mood<=2)add("Be gentle with yourself","Low days are hard. A few kind words, or reaching out to someone you trust, can help.","Try Kind wishes",me(3));
+    if(tags.has("Poor sleep"))add("Rest is part of this","Poor sleep amplifies anxiety. A short wind-down can help tonight.","Try Wind down for sleep",me(4));
+    if(tags.has("Caffeine"))add("Check your caffeine","Caffeine can mimic and amplify anxiety. Try water, a short walk, and less of it later in the day.");
+    if(["Work","Money","Health","Relationships"].some(t=>tags.has(t)))add("Write it out","Putting one specific worry on the page shows what’s in your control.","Open Journal",()=>go("journal"));
+    if(tags.has("Nothing clear"))add("Scan your body","When there’s no clear cause, tension often hides in the body.","Try Body scan",me(0));
+    if(r.length<3&&anx>=4)add("Get your body moving","Even five minutes of movement can ease built-up tension.","See activities",()=>go("ground"));
+    const kids=r.slice(0,3).map(x=>el("div",{class:"card"},el("strong",{},x.t),el("p",{},x.x),x.l?el("button",{class:"chip",style:"margin-top:10px",onclick:x.f},x.l):""));
+    const note=(anx>=8||mood===1)?el("p",{class:"muted"},"If you feel like this often or it’s hard to cope, a doctor or therapist can help."):"";
+    recs.replaceChildren(el("div",{class:"lbl"},"Suggestions for you"),...kids,note);
+    recs.scrollIntoView({block:"nearest",behavior:"smooth"});
+  };
+  const draw=()=>{
+    const last=mem.checkins.slice(-7);
+    if(!last.length){hist.replaceChildren(el("p",{class:"muted"},"No check-ins yet. Your anxiety trend will show here."));return}
+    hist.replaceChildren(el("div",{class:"card"},el("div",{class:"lbl",style:"margin-top:0"},"Anxiety, last "+last.length+" check-ins"),el("div",{class:"bars"},last.map(c=>el("div",{style:"height:"+Math.max(5,c.anx*10)+"%",title:c.anx+"/10"}))),el("div",{class:"row",style:"margin-top:6px"},el("span",{},"Oldest"),el("span",{},"Latest"))));
+  };
+  const save=el("button",{class:"btn",onclick:()=>{mem.checkins.push({t:Date.now(),mood,anx,tags:[...tags]});store.set("checkins",mem.checkins);save.textContent="Saved";setTimeout(()=>save.textContent="Save check-in",1400);draw();showRecs()}},"Save check-in");
+  return[el("div",{class:"lbl",id:"ml"},"Mood"),m,el("div",{class:"row"},el("span",{},"Low"),mv,el("span",{},"Great")),
+    el("div",{class:"lbl",id:"al"},"Anxiety right now"),a,el("div",{class:"row"},el("span",{},"Calm"),av,el("span",{},"Intense")),
+    el("div",{class:"lbl"},"What’s playing a part?"),chips,save,recs,el("div",{style:"height:18px"}),hist];
+}
+
+function journal(){
+  const Q=["What happened, or what am I worried might happen?","What am I telling myself about it?","What’s another way to see it, or one small thing I can do?"];
+  const fields=Q.map(()=>el("textarea",{}));
+  const list=el("div");
+  const draw=()=>list.replaceChildren(...mem.entries.slice().reverse().map(en=>el("div",{class:"card"},el("small",{},new Date(en.t).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})),en.a.map((x,i)=>x?el("p",{},x):""),el("button",{class:"del",onclick:()=>{mem.entries=mem.entries.filter(z=>z!==en);store.set("entries",mem.entries);draw()}},"Delete entry"))));
+  const save=el("button",{class:"btn",onclick:()=>{const a=fields.map(f=>f.value.trim());if(!a.some(Boolean)){save.textContent="Write something first";setTimeout(()=>save.textContent="Save entry",1400);return}mem.entries.push({t:Date.now(),a});store.set("entries",mem.entries);fields.forEach(f=>f.value="");draw()}},"Save entry");
+  return[...Q.flatMap((q,i)=>[el("label",{},q),fields[i]]),el("div",{style:"height:16px"}),save,el("p",{class:"muted"},"Entries stay on this device only."),list];
+}
+
+const ACTS=[
+["Move","Brisk walk","10 min","A steady walk helps burn off stress hormones. Keep your phone in your pocket."],
+["Move","Shake it out","2 min","Shake your hands, arms, then legs loosely for a minute. Let your body be silly."],
+["Move","Gentle stretch","5 min","Slow neck rolls, shoulder shrugs, then a forward fold with soft knees."],
+["Move","Dance to one song","4 min","Put on something upbeat and move however you like."],
+["Outdoors","Step outside","5 min","Get some daylight and name three things you notice: a sound, a color, a smell."],
+["Outdoors","Sit near green or water","10 min","A park bench, a tree, or a window with a view all count."],
+["Hands-on","Warm shower","10 min","Let the warmth loosen your shoulders. Notice the sound and feel of the water."],
+["Hands-on","Tea, slowly","5 min","Make a warm drink and finish it with no screen. Feel the cup in your hands."],
+["Hands-on","Tidy one small space","5 min","A single drawer or desktop. A small finished task can restore a sense of control."],
+["Hands-on","Doodle or color","10 min","No goal, no audience. Let your hand move."],
+["Connect","Text someone","3 min","Send a hello to a friend or family member. You don’t have to explain everything."],
+["Connect","Time with a pet","5 min","Pet, play, or just sit with an animal if you have one nearby."]];
+function activities(){
+  let cat="All";
+  const chips=el("div",{class:"chips"}),list=el("div"),spot=el("div");
+  const card=(a,hl)=>el("div",{class:"card",style:hl?"border:2px solid var(--accent)":""},el("strong",{},a[1]),el("small",{style:"margin-left:8px"},a[2]),el("p",{},a[3]));
+  const draw=()=>{
+    chips.replaceChildren(...["All","Move","Outdoors","Hands-on","Connect"].map(c=>el("button",{class:"chip","aria-pressed":c===cat,onclick:()=>{cat=c;draw()}},c)));
+    list.replaceChildren(...ACTS.filter(a=>cat==="All"||a[0]===cat).map(a=>card(a,false)));
+  };
+  draw();
+  const pick=el("button",{class:"btn ghost",onclick:()=>spot.replaceChildren(card(ACTS[Math.floor(Math.random()*ACTS.length)],true))},"Pick one for me");
+  return[el("div",{class:"lbl",style:"margin-top:26px"},"Move and reset"),pick,spot,el("div",{style:"height:10px"}),chips,list,el("p",{class:"muted"},"Go at a comfortable pace and skip anything that hurts.")];
+}
+function ground(){
+  const STEPS=[["5","things you can see"],["4","things you can touch"],["3","things you can hear"],["2","things you can smell"],["1","thing you can taste"]];
+  let i=0;const box=el("div",{class:"card"});
+  const draw=()=>{
+    if(i>=STEPS.length){box.replaceChildren(el("div",{class:"big"},"Well done."),el("p",{},"Notice how your shoulders and jaw feel now. Repeat if you need to."),el("div",{style:"height:14px"}),el("button",{class:"btn ghost",onclick:()=>{i=0;draw()}},"Start over"));return}
+    const [n,t]=STEPS[i];
+    box.replaceChildren(el("small",{},"Step "+(i+1)+" of 5"),el("div",{class:"big"},"Name "+n+" "+t+"."),el("p",{class:"muted"},"Say them out loud or in your head. Take your time."),el("div",{style:"height:14px"}),el("button",{class:"btn",onclick:()=>{i++;draw()}},i===4?"Finish":"Done, next"));
+  };
+  draw();
+  return[box,...activities(),el("p",{class:"muted"},"Ease is a self-help tool, not medical care or a replacement for therapy.")];
+}
+const QUOTES=[["We suffer more often in imagination than in reality.","Seneca"],["The soul becomes dyed with the color of its thoughts.","Marcus Aurelius"],["It is not things that disturb us, but our judgments about things.","Epictetus"]];
+function home(){
+  const q=QUOTES[Math.floor(Date.now()/864e5)%QUOTES.length];
+  return[el("div",{class:"card",style:"padding:24px 20px;margin-top:8px"},el("p",{style:"font-size:22px;line-height:1.35;font-weight:500;margin:0"},"“"+q[0]+"”"),el("p",{class:"muted",style:"margin:12px 0 0"},q[1])),
+    el("p",{},"Ease is a self-help tool for everyday stress and anxiety. It offers breathing, meditation, journaling, grounding, and simple activities you can use any time."),
+    el("p",{class:"muted"},"It isn’t medical care or a replacement for therapy. Everything you write stays on this device."),
+    el("div",{style:"height:8px"}),el("button",{class:"btn",onclick:()=>go("breathe")},"Start with a breath")];
+}
+const MEDS=[
+{n:"Body scan",d:"Move attention slowly from head to toe.",p:["Settle in. Let your eyes close, or soften your gaze.","Notice your forehead and jaw. Let them loosen.","Let your neck and shoulders drop.","Feel your arms and hands. Let them get heavy.","Notice your chest rising and falling.","Soften your belly. No need to hold it in.","Feel your hips, legs, and feet resting.","Take in your whole body at once. Rest here."]},
+{n:"Mindful breathing",d:"Follow the breath and return when you drift.",p:["Sit comfortably. Let your breath find its own pace.","Notice where you feel the breath most: nose, chest, or belly.","Follow one full breath in and out.","If your mind wanders, that’s normal. Gently come back to the breath.","Let each out-breath release a little tension.","Keep returning, as many times as you need."]},
+{n:"Letting thoughts pass",d:"Watch worries come and go like clouds.",p:["Settle in and take a slow breath.","Notice a thought that’s here. Just see it, without arguing.","Imagine it as a cloud drifting across a wide sky.","Another thought comes. Let it float by too.","You don’t have to solve anything right now.","Rest in the open sky behind the clouds."]},
+{n:"Kind wishes",d:"Offer warmth to yourself and others.",p:["Settle in. Place a hand on your chest if you like.","Silently say to yourself: may I be safe and at ease.","Say it again: may I be kind to myself today.","Picture someone you care about. May you be safe and at ease.","Widen the circle to everyone having a hard day. May they be at ease.","Come back to your own breath and let the warmth settle."]},
+{n:"Wind down for sleep",d:"Release the day before bed.",p:["Lie down and let the bed hold your weight.","Let the day go. Nothing more is needed from you now.","Relax your face, tongue, and eyes.","Let your arms and legs grow heavy and warm.","Breathe slowly. Each out-breath sinks you deeper.","If thoughts come, let them drift. Rest."]}];
+function meditate(){
+  let med=window.medPick||0,mins=5;window.medPick=0;const box=el("div");
+  const chime=()=>{try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain(),n=c.currentTime;o.frequency.value=528;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(.0001,n);g.gain.exponentialRampToValueAtTime(.2,n+.05);g.gain.exponentialRampToValueAtTime(.0001,n+2.5);o.start();o.stop(n+2.6)}catch(e){}};
+  function pick(){
+    const list=MEDS.map((m,i)=>el("button",{class:"card","aria-pressed":i===med,style:"display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;margin:8px 0;"+(i===med?"border:2px solid var(--accent)":""),onclick:()=>{med=i;pick()}},el("strong",{},m.n),el("p",{class:"muted",style:"margin:2px 0 0"},m.d)));
+    const durs=el("div",{class:"chips"},[3,5,10].map(d=>el("button",{class:"chip","aria-pressed":d===mins,onclick:()=>{mins=d;pick()}},d+" min")));
+    box.replaceChildren(...list,el("div",{class:"lbl"},"Length"),durs,el("button",{class:"btn",onclick:session},"Begin"),el("p",{class:"muted"},"A soft tone plays at the start and end. Turn your volume down or silent if you prefer."));
+  }
+  function done(){box.replaceChildren(el("div",{class:"card"},el("div",{class:"big"},"Session complete."),el("p",{},"Take a breath before you move on. Notice how you feel compared with when you started.")),el("button",{class:"btn",onclick:pick},"Back to sessions"))}
+  function session(){
+    const M=MEDS[med],total=mins*60000,t0=Date.now();
+    const line=el("div",{class:"big",style:"min-height:96px"}),bar=el("div",{style:"height:100%;width:0;background:var(--accent);transition:width .5s linear"}),left=el("div",{class:"count"});
+    running=true;chime();
+    const tick=()=>{if(!running)return;const e=Date.now()-t0;if(e>=total){running=false;chime();done();return}
+      const i=Math.min(M.p.length-1,Math.floor(e/total*M.p.length));if(line.textContent!==M.p[i])line.textContent=M.p[i];
+      bar.style.width=(e/total*100)+"%";const r=Math.ceil((total-e)/1000);left.textContent=Math.floor(r/60)+":"+String(r%60).padStart(2,"0")+" left";timer=setTimeout(tick,500)};
+    box.replaceChildren(el("div",{class:"card"},el("small",{},M.n+", "+mins+" min"),line,el("div",{style:"height:6px;border-radius:3px;background:var(--line);overflow:hidden"},bar),left),el("button",{class:"btn ghost",onclick:()=>{stop();pick()}},"End session"));
+    tick();
+  }
+  pick();return[box];
+}
+go("home");
+</script>
+</body>
+</html>
