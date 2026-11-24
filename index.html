@@ -27,6 +27,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
 .chip{padding:10px 16px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:15px;cursor:pointer;min-height:44px}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.bubble{background:var(--soft);color:var(--ink);border-radius:20px;padding:16px;margin:0 0 18px;position:relative;text-align:center}
+.bubble::before{content:"";position:absolute;top:-8px;left:50%;margin-left:-8px;border:8px solid transparent;border-top:0;border-bottom-color:var(--soft)}
+.brow{display:flex;gap:8px;margin-top:12px}
+.brow .btn{padding:12px 8px;min-height:48px;font-size:16px;border-color:var(--accent)}
 .stage{display:flex;flex-direction:column;align-items:center;margin:18px 0 22px}
 .orb-wrap{width:250px;height:250px;display:grid;place-items:center}
 .orb{width:130px;height:130px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--soft),var(--accent));display:grid;place-items:center;color:var(--accent-ink);font-weight:700;font-size:18px;transform:scale(1);transition:transform 4s ease-in-out}
@@ -46,7 +50,9 @@ textarea{width:100%;min-height:84px;padding:12px;border-radius:12px;border:1.5px
 .big{font-size:22px;line-height:1.3;font-weight:700;margin:10px 0 16px}
 .muted{color:var(--mute);font-size:14px}
 .del{background:none;border:0;color:var(--mute);font:inherit;font-size:14px;cursor:pointer;padding:8px 0;min-height:44px}
-@media (prefers-reduced-motion:reduce){.orb{transition-duration:.01s!important}}
+.guide{width:84px;height:84px;margin:6px auto 14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--soft),var(--accent));animation:gb 10s ease-in-out infinite}
+@keyframes gb{0%,100%{transform:scale(.8)}40%{transform:scale(1.15)}}
+@media (prefers-reduced-motion:reduce){.orb{transition-duration:.01s!important}.guide{animation:none}}
 </style>
 </head>
 <body>
@@ -62,10 +68,11 @@ const DESC={"Box":"4 in, 4 hold, 4 out, 4 hold. Steady and focusing.","4-7-8":"4
 const TAGS=["Poor sleep","Caffeine","Work","Money","Health","Relationships","Crowds","Nothing clear"];
 const MOODS=["Very low","Low","Okay","Good","Great"];
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-let tab="breathe",timer=null,pattern="Box",running=false,mem={checkins:store.get("checkins",[]),entries:store.get("entries",[])};
+let tab="breathe",timer=null,pattern="Box",running=false,mem={checkins:store.get("checkins",[]),entries:store.get("entries",[]),log:store.get("log",[])};
+function logIt(type,name){mem.log.push({t:Date.now(),type,name});store.set("log",mem.log)}
 const $=(s,r=document)=>r.querySelector(s),view=$("#view");
 function el(t,a={},...kids){const e=document.createElement(t);for(const k in a){if(k==="class")e.className=a[k];else if(k.startsWith("on"))e.addEventListener(k.slice(2),a[k]);else e.setAttribute(k,a[k])}kids.flat().forEach(c=>e.append(c));return e}
-function stop(){running=false;clearTimeout(timer)}
+function stop(){running=false;clearTimeout(timer);try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}}
 function nav(){const n=$("#nav");n.replaceChildren(...TABS.map(([id,name])=>el("button",{role:"tab","aria-selected":id===tab,onclick:()=>go(id)},name)))}
 function go(id){stop();tab=id;const t=TABS.find(x=>x[0]===id);$("#title").textContent=t[3]||t[1];$("#sub").textContent=t[2];nav();view.scrollTop=0;view.replaceChildren(...({home,breathe,checkin,journal,meditate,ground}[id])())}
 
@@ -75,19 +82,24 @@ function breathe(){
   const btn=el("button",{class:"btn"},"Start");
   const drawChips=()=>{desc.textContent=DESC[pattern];chips.replaceChildren(...Object.keys(PATTERNS).map(p=>el("button",{class:"chip","aria-pressed":p===pattern,onclick:()=>{if(running)return;pattern=p;drawChips()}},p)))};
   drawChips();
+  const ROUNDS=4;
+  const bubble=el("div",{class:"bubble",role:"status"},el("strong",{},"Well done, ready to move to the next?"),el("div",{class:"brow"},el("button",{class:"btn ghost",onclick:()=>begin()},"More breathing"),el("button",{class:"btn",onclick:()=>go("checkin")},"Go to check-in")));
+  bubble.hidden=true;
+  function begin(){bubble.hidden=true;running=true;btn.textContent="Stop";run()}
+  function finish(){running=false;logIt("Breathing",pattern);orb.style.transitionDuration="1.5s";orb.style.transform="scale(1)";orb.textContent="Done";count.textContent=ROUNDS+" rounds complete.";btn.textContent="Start";bubble.hidden=false;bubble.scrollIntoView({block:"nearest",behavior:"smooth"})}
   function run(i=0,cycles=0){
     if(!running)return;
     const seq=PATTERNS[pattern],[label,secs,scale]=seq[i%seq.length];
     orb.textContent=label;orb.style.transitionDuration=secs+"s";orb.style.transform="scale("+scale+")";
     let left=secs;count.textContent=left+"s";
-    const tick=()=>{if(!running)return;left--;if(left>0){count.textContent=left+"s";timer=setTimeout(tick,1000)}else{const ni=i+1;if(ni%seq.length===0)cycles++;run(ni,cycles)}};
+    const tick=()=>{if(!running)return;left--;if(left>0){count.textContent=left+"s";timer=setTimeout(tick,1000)}else{const ni=i+1;if(ni%seq.length===0)cycles++;if(cycles>=ROUNDS){finish();return}run(ni,cycles)}};
     timer=setTimeout(tick,1000);
   }
   btn.onclick=()=>{
     if(running){stop();orb.style.transitionDuration="1.5s";orb.style.transform="scale(1)";orb.textContent="Ready";count.textContent="Paused. Start again whenever you like.";btn.textContent="Start";return}
-    running=true;btn.textContent="Stop";run();
+    begin();
   };
-  return[el("div",{class:"stage"},el("div",{class:"orb-wrap"},orb),count),chips,desc,btn,el("p",{class:"muted"},"Longer out-breaths than in-breaths help settle your nervous system. If you feel dizzy, pause and breathe normally.")];
+  return[el("div",{class:"stage"},el("div",{class:"orb-wrap"},orb),count),bubble,chips,desc,btn,el("p",{class:"muted"},"Longer out-breaths than in-breaths help settle your nervous system. If you feel dizzy, pause and breathe normally.")];
 }
 
 function checkin(){
@@ -96,7 +108,13 @@ function checkin(){
   const m=el("input",{type:"range",min:1,max:5,value:3,"aria-labelledby":"ml",oninput:e=>{mood=+e.target.value;mv.textContent=MOODS[mood-1]}});
   const a=el("input",{type:"range",min:0,max:10,value:4,"aria-labelledby":"al",oninput:e=>{anx=+e.target.value;av.textContent=anx+" / 10"}});
   const chips=el("div",{class:"chips"},TAGS.map(t=>el("button",{class:"chip","aria-pressed":"false",onclick:e=>{const b=e.currentTarget;tags.has(t)?tags.delete(t):tags.add(t);b.setAttribute("aria-pressed",tags.has(t))}},t)));
-  const hist=el("div"),recs=el("div");
+  const hist=el("div"),recs=el("div"),today=el("div");
+  const drawToday=()=>{
+    const d=new Date().toDateString(),items=mem.log.filter(x=>new Date(x.t).toDateString()===d).reverse();
+    const kids=items.length?items.map(x=>el("div",{style:"display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line)"},el("span",{},el("strong",{},x.type),": "+x.name),el("small",{style:"white-space:nowrap"},new Date(x.t).toLocaleTimeString([],{timeStyle:"short"})))):[el("p",{class:"muted",style:"margin:6px 0 0"},"Nothing yet today. Try a few breaths or a short walk.")];
+    today.replaceChildren(el("div",{class:"card"},el("div",{class:"lbl",style:"margin:0 0 2px"},"Today so far"),el("small",{},items.length+(items.length===1?" thing":" things")+" done"),...kids));
+  };
+  drawToday();
   const showRecs=()=>{
     const r=[],add=(t,x,l,f)=>r.push({t,x,l,f});
     const br=p=>()=>{pattern=p;go("breathe")},me=i=>()=>{window.medPick=i;go("meditate")};
@@ -119,10 +137,10 @@ function checkin(){
     if(!last.length){hist.replaceChildren(el("p",{class:"muted"},"No check-ins yet. Your anxiety trend will show here."));return}
     hist.replaceChildren(el("div",{class:"card"},el("div",{class:"lbl",style:"margin-top:0"},"Anxiety, last "+last.length+" check-ins"),el("div",{class:"bars"},last.map(c=>el("div",{style:"height:"+Math.max(5,c.anx*10)+"%",title:c.anx+"/10"}))),el("div",{class:"row",style:"margin-top:6px"},el("span",{},"Oldest"),el("span",{},"Latest"))));
   };
-  const save=el("button",{class:"btn",onclick:()=>{mem.checkins.push({t:Date.now(),mood,anx,tags:[...tags]});store.set("checkins",mem.checkins);save.textContent="Saved";setTimeout(()=>save.textContent="Save check-in",1400);draw();showRecs()}},"Save check-in");
-  return[el("div",{class:"lbl",id:"ml"},"Mood"),m,el("div",{class:"row"},el("span",{},"Low"),mv,el("span",{},"Great")),
-    el("div",{class:"lbl",id:"al"},"Anxiety right now"),a,el("div",{class:"row"},el("span",{},"Calm"),av,el("span",{},"Intense")),
-    el("div",{class:"lbl"},"What’s playing a part?"),chips,save,recs,el("div",{style:"height:18px"}),hist];
+  const save=el("button",{class:"btn",onclick:()=>{mem.checkins.push({t:Date.now(),mood,anx,tags:[...tags]});logIt("Check-in","mood "+MOODS[mood-1].toLowerCase()+", anxiety "+anx+"/10");store.set("checkins",mem.checkins);save.textContent="Saved";setTimeout(()=>save.textContent="Save check-in",1400);draw();showRecs();drawToday()}},"Save check-in");
+  return[el("div",{class:"lbl",id:"ml"},"How are you feeling right now?"),m,el("div",{class:"row"},el("span",{},"Low"),mv,el("span",{},"Great")),
+    el("div",{class:"lbl",id:"al"},"How anxious do you feel right now?"),a,el("div",{class:"row"},el("span",{},"Calm"),av,el("span",{},"Intense")),
+    el("div",{class:"lbl"},"What’s playing a part?"),chips,save,recs,el("div",{style:"height:18px"}),today,hist];
 }
 
 function journal(){
@@ -130,7 +148,7 @@ function journal(){
   const fields=Q.map(()=>el("textarea",{}));
   const list=el("div");
   const draw=()=>list.replaceChildren(...mem.entries.slice().reverse().map(en=>el("div",{class:"card"},el("small",{},new Date(en.t).toLocaleString([], {dateStyle:"medium",timeStyle:"short"})),en.a.map((x,i)=>x?el("p",{},x):""),el("button",{class:"del",onclick:()=>{mem.entries=mem.entries.filter(z=>z!==en);store.set("entries",mem.entries);draw()}},"Delete entry"))));
-  const save=el("button",{class:"btn",onclick:()=>{const a=fields.map(f=>f.value.trim());if(!a.some(Boolean)){save.textContent="Write something first";setTimeout(()=>save.textContent="Save entry",1400);return}mem.entries.push({t:Date.now(),a});store.set("entries",mem.entries);fields.forEach(f=>f.value="");draw()}},"Save entry");
+  const save=el("button",{class:"btn",onclick:()=>{const a=fields.map(f=>f.value.trim());if(!a.some(Boolean)){save.textContent="Write something first";setTimeout(()=>save.textContent="Save entry",1400);return}mem.entries.push({t:Date.now(),a});logIt("Journal","Journal entry");store.set("entries",mem.entries);fields.forEach(f=>f.value="");draw()}},"Save entry");
   return[...Q.flatMap((q,i)=>[el("label",{},q),fields[i]]),el("div",{style:"height:16px"}),save,el("p",{class:"muted"},"Entries stay on this device only."),list];
 }
 
@@ -150,7 +168,7 @@ const ACTS=[
 function activities(){
   let cat="All";
   const chips=el("div",{class:"chips"}),list=el("div"),spot=el("div");
-  const card=(a,hl)=>el("div",{class:"card",style:hl?"border:2px solid var(--accent)":""},el("strong",{},a[1]),el("small",{style:"margin-left:8px"},a[2]),el("p",{},a[3]));
+  const card=(a,hl)=>el("div",{class:"card",style:hl?"border:2px solid var(--accent)":""},el("strong",{},a[1]),el("small",{style:"margin-left:8px"},a[2]),el("p",{},a[3]),el("button",{class:"chip",style:"margin-top:10px",onclick:e=>{logIt("Activity",a[1]);e.currentTarget.textContent="Logged for today";e.currentTarget.disabled=true}},"I did this"));
   const draw=()=>{
     chips.replaceChildren(...["All","Move","Outdoors","Hands-on","Connect"].map(c=>el("button",{class:"chip","aria-pressed":c===cat,onclick:()=>{cat=c;draw()}},c)));
     list.replaceChildren(...ACTS.filter(a=>cat==="All"||a[0]===cat).map(a=>card(a,false)));
@@ -163,16 +181,17 @@ function ground(){
   const STEPS=[["5","things you can see"],["4","things you can touch"],["3","things you can hear"],["2","things you can smell"],["1","thing you can taste"]];
   let i=0;const box=el("div",{class:"card"});
   const draw=()=>{
-    if(i>=STEPS.length){box.replaceChildren(el("div",{class:"big"},"Well done."),el("p",{},"Notice how your shoulders and jaw feel now. Repeat if you need to."),el("div",{style:"height:14px"}),el("button",{class:"btn ghost",onclick:()=>{i=0;draw()}},"Start over"));return}
+    if(i>=STEPS.length){logIt("Grounding","5-4-3-2-1");box.replaceChildren(el("div",{class:"big"},"Well done."),el("p",{},"Notice how your shoulders and jaw feel now. Repeat if you need to."),el("div",{style:"height:14px"}),el("button",{class:"btn ghost",onclick:()=>{i=0;draw()}},"Start over"));return}
     const [n,t]=STEPS[i];
     box.replaceChildren(el("small",{},"Step "+(i+1)+" of 5"),el("div",{class:"big"},"Name "+n+" "+t+"."),el("p",{class:"muted"},"Say them out loud or in your head. Take your time."),el("div",{style:"height:14px"}),el("button",{class:"btn",onclick:()=>{i++;draw()}},i===4?"Finish":"Done, next"));
   };
   draw();
   return[box,...activities(),el("p",{class:"muted"},"Ease is a self-help tool, not medical care or a replacement for therapy.")];
 }
-const QUOTES=[["We suffer more often in imagination than in reality.","Seneca"],["The soul becomes dyed with the color of its thoughts.","Marcus Aurelius"],["It is not things that disturb us, but our judgments about things.","Epictetus"]];
+const QUOTES=[["We suffer more often in imagination than in reality.","Seneca"],["The soul becomes dyed with the color of its thoughts.","Marcus Aurelius"],["It is not things that disturb us, but our judgments about things.","Epictetus"],["Very little is needed to make a happy life.","Marcus Aurelius"],["Begin at once to live, and count each separate day as a separate life.","Seneca"],["No man is free who is not master of himself.","Epictetus"]];
+const QI=(()=>{const last=store.get("lastQuote",-1);let i;do{i=Math.floor(Math.random()*QUOTES.length)}while(i===last&&QUOTES.length>1);store.set("lastQuote",i);return i})();
 function home(){
-  const q=QUOTES[Math.floor(Date.now()/864e5)%QUOTES.length];
+  const q=QUOTES[QI];
   return[el("div",{class:"card",style:"padding:24px 20px;margin-top:8px"},el("p",{style:"font-size:22px;line-height:1.35;font-weight:500;margin:0"},"“"+q[0]+"”"),el("p",{class:"muted",style:"margin:12px 0 0"},q[1])),
     el("p",{},"Ease is a self-help tool for everyday stress and anxiety. It offers breathing, meditation, journaling, grounding, and simple activities you can use any time."),
     el("p",{class:"muted"},"It isn’t medical care or a replacement for therapy. Everything you write stays on this device."),
@@ -187,20 +206,23 @@ const MEDS=[
 function meditate(){
   let med=window.medPick||0,mins=5;window.medPick=0;const box=el("div");
   const chime=()=>{try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain(),n=c.currentTime;o.frequency.value=528;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(.0001,n);g.gain.exponentialRampToValueAtTime(.2,n+.05);g.gain.exponentialRampToValueAtTime(.0001,n+2.5);o.start();o.stop(n+2.6)}catch(e){}};
+  let voice=true;
+  const speak=t=>{if(!voice||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.85;u.pitch=.95;speechSynthesis.speak(u)}catch(e){}};
   function pick(){
     const list=MEDS.map((m,i)=>el("button",{class:"card","aria-pressed":i===med,style:"display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;margin:8px 0;"+(i===med?"border:2px solid var(--accent)":""),onclick:()=>{med=i;pick()}},el("strong",{},m.n),el("p",{class:"muted",style:"margin:2px 0 0"},m.d)));
     const durs=el("div",{class:"chips"},[3,5,10].map(d=>el("button",{class:"chip","aria-pressed":d===mins,onclick:()=>{mins=d;pick()}},d+" min")));
-    box.replaceChildren(...list,el("div",{class:"lbl"},"Length"),durs,el("button",{class:"btn",onclick:session},"Begin"),el("p",{class:"muted"},"A soft tone plays at the start and end. Turn your volume down or silent if you prefer."));
+    const vo=el("div",{class:"chips"},[["On",true],["Off",false]].map(([n,v])=>el("button",{class:"chip","aria-pressed":voice===v,onclick:()=>{voice=v;pick()}},n)));
+    box.replaceChildren(...list,el("div",{class:"lbl"},"Length"),durs,el("div",{class:"lbl"},"Voice guidance"),vo,el("button",{class:"btn",onclick:session},"Begin"),el("p",{class:"muted"},"Voice guidance reads each step aloud in your device’s voice. A soft tone plays at the start and end."));
   }
   function done(){box.replaceChildren(el("div",{class:"card"},el("div",{class:"big"},"Session complete."),el("p",{},"Take a breath before you move on. Notice how you feel compared with when you started.")),el("button",{class:"btn",onclick:pick},"Back to sessions"))}
   function session(){
-    const M=MEDS[med],total=mins*60000,t0=Date.now();
-    const line=el("div",{class:"big",style:"min-height:96px"}),bar=el("div",{style:"height:100%;width:0;background:var(--accent);transition:width .5s linear"}),left=el("div",{class:"count"});
+    const M=MEDS[med],P=["Find a comfortable position. Let your shoulders drop and your jaw soften.","Take three slow breaths. In through the nose, out through the mouth.",...M.p,"Take one deeper breath in, and let it all the way out.","Slowly bring your attention back to the room. Open your eyes when you’re ready."],total=mins*60000;let t0=Date.now(),pAt=0;
+    const line=el("div",{class:"big",style:"min-height:96px"}),bar=el("div",{style:"height:100%;width:0;background:var(--accent);transition:width .5s linear"}),left=el("div",{class:"count"}),stepEl=el("small",{style:"display:block;margin-bottom:6px"}),pauseBtn=el("button",{class:"btn ghost",onclick:()=>{if(pAt){t0+=Date.now()-pAt;pAt=0;pauseBtn.textContent="Pause";tick()}else{clearTimeout(timer);try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}pAt=Date.now();pauseBtn.textContent="Resume"}}},"Pause");
     running=true;chime();
-    const tick=()=>{if(!running)return;const e=Date.now()-t0;if(e>=total){running=false;chime();done();return}
-      const i=Math.min(M.p.length-1,Math.floor(e/total*M.p.length));if(line.textContent!==M.p[i])line.textContent=M.p[i];
+    const tick=()=>{if(!running)return;const e=Date.now()-t0;if(e>=total){running=false;chime();logIt("Meditation",M.n);done();return}
+      const i=Math.min(P.length-1,Math.floor(e/total*P.length));if(line.textContent!==P[i]){line.textContent=P[i];stepEl.textContent="Step "+(i+1)+" of "+P.length;speak(P[i])}
       bar.style.width=(e/total*100)+"%";const r=Math.ceil((total-e)/1000);left.textContent=Math.floor(r/60)+":"+String(r%60).padStart(2,"0")+" left";timer=setTimeout(tick,500)};
-    box.replaceChildren(el("div",{class:"card"},el("small",{},M.n+", "+mins+" min"),line,el("div",{style:"height:6px;border-radius:3px;background:var(--line);overflow:hidden"},bar),left),el("button",{class:"btn ghost",onclick:()=>{stop();pick()}},"End session"));
+    box.replaceChildren(el("div",{class:"card"},el("small",{},M.n+", "+mins+" min"),el("div",{class:"guide","aria-hidden":"true"}),stepEl,line,el("div",{style:"height:6px;border-radius:3px;background:var(--line);overflow:hidden"},bar),left),el("div",{class:"brow"},pauseBtn,el("button",{class:"btn ghost",onclick:()=>{stop();pick()}},"End session")));
     tick();
   }
   pick();return[box];
